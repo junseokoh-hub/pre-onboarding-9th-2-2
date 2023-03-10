@@ -8,8 +8,10 @@ import {
   Text,
   Badge,
   Box,
+  useToast,
 } from "@chakra-ui/react";
-import { ProductType } from "@/types/product-type";
+import { ProductType } from "@/types/product.type";
+import { reserveItem } from "@/helpers/reserve-action";
 
 interface ProductItemProps {
   product: ProductType;
@@ -17,21 +19,39 @@ interface ProductItemProps {
 }
 
 const ProductItem = ({ product, showModal }: ProductItemProps) => {
+  const toast = useToast();
+
   const addToCart = async () => {
-    await fetch(`/api/reservations`, {
-      method: "POST",
-      body: JSON.stringify(product),
+    await reserveItem(product).then((res) => {
+      if (res.status === 201) {
+        toast({
+          title: "Product Reserved.",
+          description: "Product has well reserved in your cart.",
+          status: "success",
+          duration: 3000,
+          isClosable: true,
+        });
+      } else if (res.status === 422) {
+        toast({
+          title: "Failed to Reserved.",
+          description: "Product is already in your cart.",
+          status: "error",
+          duration: 3000,
+          isClosable: true,
+        });
+      }
     });
   };
 
   return (
     <Flex
+      pb="0.8rem"
+      minW="20rem"
       boxShadow="dark-lg"
       direction="column"
-      align="center"
-      borderRadius={"10px"}
+      borderRadius="10px"
     >
-      <Stack pos={"relative"} w="full" h="250px">
+      <Stack mb="2px" pos="relative" w="full" h="250px">
         <Image
           style={{
             borderTopRightRadius: "10px",
@@ -42,22 +62,18 @@ const ProductItem = ({ product, showModal }: ProductItemProps) => {
           alt={product.description as string}
         />
       </Stack>
-      <Stack>
-        <Badge color="white" maxW={"max-content"} bg="blue">
+      <Stack px="8px">
+        <Badge color="white" maxW="max-content" bg="green">
           {product.spaceCategory}
         </Badge>
         <Box>
-          <Text align="center">{product.name}</Text>
-          <Text align="center">{product.idx}</Text>
-          <Text align="center">{product.price}</Text>
+          <Text>이름 : {product.name}</Text>
+          <Text>등록 번호 : {product.idx}</Text>
+          <Text>가격 : {product.price}</Text>
         </Box>
       </Stack>
-      <ButtonGroup>
-        <Button
-          type="button"
-          id={String(product.idx)}
-          onClick={() => showModal(product)}
-        >
+      <ButtonGroup display="flex" justifyContent="center">
+        <Button type="button" onClick={() => showModal(product)}>
           더보기
         </Button>
         <Button type="button" onClick={addToCart}>

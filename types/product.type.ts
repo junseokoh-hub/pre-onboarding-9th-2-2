@@ -3,8 +3,9 @@ export interface ProductType {
   name: string;
   mainImage: string;
   description?: string;
-  spaceCategory?: string;
+  spaceCategory: string;
   price: number;
   maximumPurchases: number;
   registrationDate?: string;
+  quantity: number;
 }

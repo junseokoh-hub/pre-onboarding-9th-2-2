@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
 import type { NextApiRequest, NextApiResponse } from "next";
-import { ProductType } from "@/types/product-type";
+import { ProductType } from "@/types/product.type";
 
 export const buildCartPath = () => {
   return path.join(process.cwd(), "data", "cart.json");
@@ -16,7 +16,7 @@ export const extractCart = (filePath: string): ProductType[] => {
 const handler = (req: NextApiRequest, res: NextApiResponse) => {
   if (req.method === "POST") {
     const products = req.body;
-    const parsedProducts: ProductType = JSON.parse(products);
+    const parsedProducts = JSON.parse(products);
 
     const filePath = buildCartPath();
     const data = extractCart(filePath);
@@ -29,11 +29,10 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
     }
 
     if (!existingData) {
-      data.push(parsedProducts);
+      const newProducts = { ...parsedProducts, quantity: 1 };
+      data.push(newProducts);
       fs.writeFileSync(filePath, JSON.stringify(data));
-      return res
-        .status(201)
-        .json({ message: "SUCCESS!", cart: parsedProducts });
+      return res.status(201).json({ message: "SUCCESS!", cart: newProducts });
     }
   }
 
@@ -41,7 +40,7 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
     try {
       const filePath = buildCartPath();
       const data = extractCart(filePath);
-      res.status(200).json({ cart: data });
+      return res.status(200).json({ cart: data });
     } catch (error) {
       return res.status(500).send("Error revalidating");
     }
@@ -57,6 +56,19 @@ const handler = (req: NextApiRequest, res: NextApiResponse) => {
     const filteredData = data.filter((item) => item.idx !== deletedId);
     fs.writeFileSync(filePath, JSON.stringify(filteredData));
     res.status(200).json({ cart: filteredData });
+  }
+
+  if (req.method === "PATCH") {
+    const { quantity, idx } = JSON.parse(req.body);
+
+    const filePath = buildCartPath();
+    const data = extractCart(filePath);
+
+    const filteredData = data.map((item) =>
+      item.idx === idx ? { ...item, quantity } : item,
+    );
+    fs.writeFileSync(filePath, JSON.stringify(filteredData));
+    return res.status(200).json({ cart: filteredData });
   }
 };
 
